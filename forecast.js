@@ -150,7 +150,12 @@
             Tt = beta * (Lt - Ltminus1) + (1.0 - beta) * Ttminus1;
             S[t + p] = gamma * (Yt - Lt) + (1.0 - gamma) * S[t];
         }
-        console.log(S);
+        /*!
+         * Forecast for each period h = 1, 2, ..., c
+         */ 
+        for (; h < c; ++h) {
+            Fth.push(Lt + (h + 1) * Tt + S[t - p + 1  + (h - 1) % p]);
+        }
         return Fth;
     }
 
