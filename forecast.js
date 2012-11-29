@@ -26,21 +26,21 @@
      * smoothing model.
      *
      * @param {Number[]} observations Time series data (a one dimensional array of y-values)
-     * @param {Number} lengthOfSeason
+     * @param {Number} p Length of one season
      * @param {Number} c Number of periods in the seasonal pattern ahead to forecast
      * @param {Object} smoothingConstants
      * @returns {Number[]} Forecast for the next `c` periods
      */
-    forecast.prototype.HoltWinters = function (observations, lengthOfSeason, c,
+    forecast.prototype.HoltWinters = function (observations, p, c,
                                                smoothingConstants
     ) {
         /*!
          * The additive Holt-Winter's prediction model is denoted by the
          * following equations:
          *
-         * Lt = a * ( Yt - St-c ) + ( 1 - a ) * ( Lt-1 + Tt-1 )
+         * Lt = a * ( Yt - St-p ) + ( 1 - a ) * ( Lt-1 + Tt-1 )
          * Tt = b * ( Lt - Lt-1 ) + ( 1 - b ) * Tt-1
-         * St = y * ( Yt - Lt ) + ( 1 - y ) * St-c
+         * St = y * ( Yt - Lt ) + ( 1 - y ) * St-p
          * Ft+h = Lt + h * Tt + St-p+1+(h-1)%p
          * 
          * **
@@ -48,9 +48,9 @@
          * The multiplicative Holt-Winter's prediction model is denoted by the
          * following equations:
          *
-         * Lt = a * ( Yt / St-c ) + ( 1 - a ) * ( Lt-1 + Tt-1 )
+         * Lt = a * ( Yt / St-p ) + ( 1 - a ) * ( Lt-1 + Tt-1 )
          * Tt = b * ( Lt - Lt-1 ) + ( 1 - b ) * Tt-1
-         * St = y * ( Yt / Lt ) + ( 1 - y ) * St-c
+         * St = y * ( Yt / Lt ) + ( 1 - y ) * St-p
          * Ft+h = ( Lt + h * Tt) * St-p+1+(h-1)%p
          *
          * Where:
@@ -60,7 +60,7 @@
          * Yt is the observed value at time t
          * St is the seasonal index/component at time t which indicates how much
          *  this period typically deviates from the average
-         * c is the number of periods in the seasonal pattern ahead to forecast
+         * p is the length of one season
          * Tt is the trend of the series at time t
          * b is the Smoothing constant beta, used to smooth Tt
          * y is the Smoothing constant gamma, used to Smoot St
@@ -77,7 +77,7 @@
             I = [],  // Initial seasonal indices
             S = new Array(observations.length + c), // Seasonal indices
             SAverageIndex = 0, // Average of the sum of the seasonal indices
-                               // for t = 1, 2, ..., lengthOfSeason
+                               // for t = 1, 2, ..., p
                                // used to compute S
             Lt,       // Level of the base value at time t
             Tt,       // Trend at time t
@@ -90,31 +90,31 @@
             gamma = smoothingConstants.gamma || 0.4,
             // TODO(el): Determine unknown smoothing constants by minimizing
             // the squared prediction error
-            h,        // Period h
+            h = 0,    // Period h
             Fth = []; // Forecast fore period h
         /*!
          * Determine the initial estimates of model parameters using a minimum
          * of two full seasons.
          * TODO(el): Validate that a minimum of two full seasons is available.
          */
-        for (t=0; t < lengthOfSeason; ++t) { // Sum of season one
+        for (t=0; t < p; ++t) { // Sum of season one
             As1 += observations[t];
         }
-        As1 /= lengthOfSeason; // Average of seasons one
-        for (t=lengthOfSeason; t < lengthOfSeason * 2; ++t) { // Sum of season 
-            As2 += observations[t];                           // two
+        As1 /= p; // Average of seasons one
+        for (t=p; t < p * 2; ++t) { // Sum of season two
+            As2 += observations[t];
         }
-        As2 /= lengthOfSeason; // Average of seasons two
+        As2 /= p; // Average of seasons two
         /*!
          * The initial estimate of the slope is found by taking the diﬀerence
          * of the average for the first two seasons and dividing by the length
          * of one season.
          */
-        T0 = (As2 - As1) / lengthOfSeason;
+        T0 = (As2 - As1) / p;
         /*!
          * Estimate inital deseasonalized level using the following equation.
          */
-        L0 = As1 - (lengthOfSeason / 2) * T0;
+        L0 = As1 - (p / 2) * T0;
         /*!
          * Determine the initial seasonal indices for each season
          * t = 1, 2, ..., c as ratio of actual observation to the
@@ -123,15 +123,35 @@
         for (t=0; t < observations.length; ++t) {
             I[t] = observations[t] / (L0 + (t + 1) * T0);
         }
-        for (t=0; t < lengthOfSeason; ++t) {
-            S[t] = (I[t] + I[t+lengthOfSeason]) / 2;
+        for (t=0; t < p; ++t) {
+            S[t] = (I[t] + I[t + p]) / 2;
             SAverageIndex += S[t];
         }
-        for (t=0; t < lengthOfSeason; ++t) {              // Normalize indices
-            S[t] = S[t] / SAverageIndex * lengthOfSeason; // so that they
-        }                                                 // sum up to c
-        console.log(S, T0, L0);
-        return [];
+        for (t=0; t < p; ++t) {              // Normalize indices
+            S[t] = S[t] / SAverageIndex * p; // so that they sum up to c
+        }
+        /*!
+         * Update estimates of the model parameters for every observation
+         * using using the Holt-Winter's additive triple exponential
+         * smoothing model.
+         */
+        Tt = T0;
+        Lt = L0;
+        for (t=0; t < observations.length; ++t) {
+            Ttminus1 = Tt;
+            Ltminus1 = Lt;
+            Yt = observations[t];
+            // Note that the index of our seasonal indices array starts with 0,
+            // so we do not have t-0, t-1, ...
+            // Instead we translate
+            // St-p to S[t] and
+            // St to S[t + p].
+            Lt = alpha * (Yt - S[t]) + (1.0 - alpha) * (Ltminus1 + Ttminus1);
+            Tt = beta * (Lt - Ltminus1) + (1.0 - beta) * Ttminus1;
+            S[t + p] = gamma * (Yt - Lt) + (1.0 - gamma) * S[t];
+        }
+        console.log(S);
+        return Fth;
     }
 
     root.forecast = forecast();
