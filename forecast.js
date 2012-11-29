@@ -10,7 +10,8 @@
 ; (function () {
     'use strict';
 
-    var // Reference to `window` in the browser, `exports`, `global` on
+    var VERSION = 0.1,
+        // Reference to `window` in the browser, `exports`, `global` on
         // the server
         root = this;
 
