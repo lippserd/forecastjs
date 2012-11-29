@@ -1,0 +1,111 @@
+<html>
+    <head>
+        <title>Holt-Winters Forecast with forecast.js</title>
+        <script src="vendor/flot/jquery.js"></script>
+        <script src="vendor/flot/jquery.flot.js"></script>
+        <script src="../forecast.js"></script>
+        <style type="text/css">
+            .plot {
+                width: 400px;
+                height: 300px;
+            }
+            .f {
+                overflow: hidden;
+            }
+            .fl {
+                float: left;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Holt-Winters Forecast with forecast.js</h1>
+        <div class="f">
+            <div class="fl">
+                <h2>Example 1</h2>
+                <div id="forecast1" class="plot"></div>
+            </div>
+            <div class="fl" style="padding-left: 10px;">
+                <h2>Example 2</h2>
+                <div id="forecast2" class="plot fl"></div>
+            </div>
+        </div>
+        <script type="text/javascript">
+            (function () {
+                var data1 = [146, 96, 59, 133,
+                             192, 127, 79, 186,
+                             272, 155, 98, 219],
+                    data2 = [0.16, 0.22, 0.17, 0.25, 0.21, 0.21, 0.26, 0.21,
+                             0.2, 0.21, 0.29, 0.37, 0.51, 0.52, 0.48, 0.42,
+                             0.38, 0.46, 0.4, 0.32, 0.3, 0.28, 0.28, 0.3, 0.26,
+                             0.28, 0.31, 0.23, 0.2, 0.18, 0.15, 0.13, 0.12,
+                             0.12, 0.12, 0.11, 0.12, 0.15, 0.16, 0.15, 0.13,
+                             0.14, 0.14, 0.16, 0.16],
+                    i = 0,
+                    series1 = [
+                        {
+                            label: 'Observations',
+                            data: [],
+                            color: '#8C1717'
+                        },
+                        {
+                            label: 'Forecast',
+                            data: [],
+                            color: '#6B238E'
+                        }
+                    ],
+                    series2 = [
+                        {
+                            label: 'Observations',
+                            data: [],
+                            color: '#8C1717'
+                        },
+                        {
+                            label: 'Forecast',
+                            data: [],
+                            color: '#6B238E'
+                        }
+                    ],
+                    p1 = 4,
+                    p2 = 12,
+                    c1 = 12,
+                    c2 = 12,
+                    smoothingConstants1 = {
+                        alpha: 0.3,
+                        beta: 0.2,
+                        gamma: 0.5
+                    },
+                    smoothingConstants2 = {
+                        alpha: 0.3,
+                        beta: 0.2,
+                        gamma: 0.5
+                    },
+                    Fth1 = forecast.HoltWinters(data1, p1, c1,
+                                                smoothingConstants1),
+                    Fth2 = forecast.HoltWinters(data2, p2, c2,
+                                                smoothingConstants2),
+                    options = {
+                        legend: {
+                            position: 'nw'
+                        },
+                        grid: {
+                            borderColor: 'rgba(0, 0, 0, 0)'
+                        }
+                    };
+                for (; i < data1.length; ++i) {
+                    series1[0].data.push([i + 1, data1[i]]);
+                }
+                for (i=0; i < Fth1.length; ++i) {
+                    series1[1].data.push([data1.length + i, Fth1[i]]);
+                }
+                $.plot($('#forecast1'), series1, options);
+                for (; i < data2.length; ++i) {
+                    series2[0].data.push([i + 2, data2[i]]);
+                }
+                for (i=0; i < Fth2.length; ++i) {
+                    series2[1].data.push([data2.length + i, Fth2[i]]);
+                }
+                $.plot($('#forecast2'), series2, options);
+            }());
+        </script>
+    </body>
+</html>

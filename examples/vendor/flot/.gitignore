@@ -1,0 +1,8 @@
+# Ignore everything
+*
+# But...
+!.gitignore
+!LICENSE.txt
+!excanvas.js
+!jquery.js
+!jquery.flot.js
