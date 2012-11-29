@@ -85,9 +85,12 @@
             Ttminus1, // Last observation's trend at time t
             Yt,       // Y-value at time t
             smoothingConstants = smoothingConstants || {},
-            alpha = smoothingConstants.alpha || 0.2,
-            beta = smoothingConstants.beta || 0.2,
-            gamma = smoothingConstants.gamma || 0.4,
+            alpha = smoothingConstants.alpha === undefined ? 0.3 :
+                    smoothingConstants.alpha,
+            beta = smoothingConstants.beta === undefined ? 0.2 :
+                   smoothingConstants.beta,
+            gamma = smoothingConstants.gamma === undefined ? 0.5 :
+                    smoothingConstants.gamma,
             // TODO(el): Determine unknown smoothing constants by minimizing
             // the squared prediction error
             h = 0,    // Period h
