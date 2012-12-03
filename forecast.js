@@ -7,7 +7,7 @@
 /**
  * Time series forecasting models.
  */
-; (function () {
+(function () {
     'use strict';
 
     var VERSION = 0.1,
@@ -22,14 +22,14 @@
     }
 
     /**
-     * Returns forecasts for the next `c` periods of time series data
+     * Returns forecast for the next `c` periods of time series data
      * `oberservations` using the (Holt-Winter's) additive triple exponential
      * smoothing model.
      *
      * @param {Number[]} observations Time series data (a one dimensional array of y-values)
      * @param {Number} p Length of one season
      * @param {Number} c Number of periods in the seasonal pattern ahead to forecast
-     * @param {Object} smoothingConstants
+     * @param {Object} smoothingConstants Smoothing constants alpha, beta and gamma
      * @returns {Number[]} Forecast for the next `c` periods
      */
     forecast.prototype.HoltWinters = function (observations, p, c,
@@ -66,11 +66,11 @@
          * b is the Smoothing constant beta, used to smooth Tt
          * y is the Smoothing constant gamma, used to Smoot St
          * Ft+h is the forecast for period h
-         * p is the length of one seasons
+         * p is the length of one season
          * 
          * TODO(el): Implement multiplicative prediction model too?
          */
-        var t,       // Time t, also abused as iteration variable
+        var t = 0,   // Time t, also abused as iteration variable
             As1 = 0, // Average value of the first season, used to compue T0
             As2 = 0, // Average value of the second season, used to compute T0
             T0,      // Initial estimate of the slope
@@ -86,14 +86,19 @@
             Ttminus1, // Last observation's trend at time t
             Yt,       // Y-value at time t
             smoothingConstants = smoothingConstants || {},
-            alpha = smoothingConstants.alpha === undefined ? 0.3 :
+            alpha = (smoothingConstants.alpha === undefined
+                     || smoothingConstants.alpha === null) ? 0.3 :
                     smoothingConstants.alpha,
-            beta = smoothingConstants.beta === undefined ? 0.2 :
+            beta = (smoothingConstants.beta === undefined
+                    || smoothingConstants.beta === null) ? 0.2 :
                    smoothingConstants.beta,
-            gamma = smoothingConstants.gamma === undefined ? 0.5 :
+            gamma = (smoothingConstants.gamma === undefined
+                     || smoothingConstants.gamma === null) ? 0.5 :
                     smoothingConstants.gamma,
             // TODO(el): Determine unknown smoothing constants by minimizing
-            // the squared prediction error
+            // the squared prediction error.
+            // TODO(el): Validate that smoothings constants are between
+            // 0 and 1.
             h = 0,    // Period h
             Fth = []; // Forecast fore period h
         /*!
@@ -101,11 +106,11 @@
          * of two full seasons.
          * TODO(el): Validate that a minimum of two full seasons is available.
          */
-        for (t=0; t < p; ++t) { // Sum of season one
+        for (; t < p; ++t) { // Sum of season one
             As1 += observations[t];
         }
         As1 /= p; // Average of seasons one
-        for (t=p; t < p * 2; ++t) { // Sum of season two
+        for (t = p; t < p * 2; ++t) { // Sum of season two
             As2 += observations[t];
         }
         As2 /= p; // Average of seasons two
@@ -124,24 +129,24 @@
          * t = 1, 2, ..., c as ratio of actual observation to the
          * seasonally average.
          */
-        for (t=0; t < observations.length; ++t) {
+        for (t = 0; t < observations.length; ++t) {
             I[t] = observations[t] / (L0 + (t + 1) * T0);
         }
-        for (t=0; t < p; ++t) {
+        for (t = 0; t < p; ++t) {
             S[t] = (I[t] + I[t + p]) / 2;
             SAverageIndex += S[t];
         }
-        for (t=0; t < p; ++t) {              // Normalize indices
+        for (t = 0; t < p; ++t) {              // Normalize indices
             S[t] = S[t] / SAverageIndex * p; // so that they sum up to c
         }
         /*!
          * Update estimates of the model parameters for every observation
-         * using using the Holt-Winter's additive triple exponential
+         * using the Holt-Winter's additive triple exponential
          * smoothing model.
          */
         Tt = T0;
         Lt = L0;
-        for (t=0; t < observations.length; ++t) {
+        for (t = 0; t < observations.length; ++t) {
             Ttminus1 = Tt;
             Ltminus1 = Lt;
             Yt = observations[t];
@@ -158,7 +163,7 @@
          * Forecast for each period h = 1, 2, ..., c
          */ 
         for (; h < c; ++h) {
-            Fth.push(Lt + (h + 1) * Tt + S[t - p + 1  + (h - 1) % p]);
+            Fth.push(Lt + (h + 1) * Tt + S[t - p + 1 + (h - 1) % p]);
         }
         return Fth;
     }
