@@ -86,14 +86,17 @@
             Ttminus1, // Last observation's trend at time t
             Yt,       // Y-value at time t
             smoothingConstants = smoothingConstants || {},
-            alpha = (smoothingConstants.alpha === undefined
-                     || smoothingConstants.alpha === null) ? 0.3 :
+            alpha = (smoothingConstants.alpha === undefined ||
+                     smoothingConstants.alpha === null) ?
+                    0.3 :
                     smoothingConstants.alpha,
-            beta = (smoothingConstants.beta === undefined
-                    || smoothingConstants.beta === null) ? 0.2 :
+            beta = (smoothingConstants.beta === undefined ||
+                    smoothingConstants.beta === null) ?
+                   0.2 :
                    smoothingConstants.beta,
-            gamma = (smoothingConstants.gamma === undefined
-                     || smoothingConstants.gamma === null) ? 0.5 :
+            gamma = (smoothingConstants.gamma === undefined ||
+                     smoothingConstants.gamma === null) ?
+                    0.5 :
                     smoothingConstants.gamma,
             // TODO(el): Determine unknown smoothing constants by minimizing
             // the squared prediction error.
@@ -166,7 +169,7 @@
             Fth.push(Lt + (h + 1) * Tt + S[t - p + 1 + (h - 1) % p]);
         }
         return Fth;
-    }
+    };
 
     root.forecast = forecast();
 }.call(this));
