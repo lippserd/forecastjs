@@ -15,7 +15,7 @@
         // the server
         root = this;
 
-    function forecast () {
+    function forecast() {
         if (!(this instanceof forecast)) {
             return new forecast();
         }
@@ -34,7 +34,7 @@
      */
     forecast.prototype.HoltWinters = function (observations, p, c,
                                                smoothingConstants
-    ) {
+        ) {
         /*!
          * The additive Holt-Winter's prediction model is denoted by the
          * following equations:
@@ -43,9 +43,9 @@
          * Tt = b * ( Lt - Lt-1 ) + ( 1 - b ) * Tt-1
          * St = y * ( Yt - Lt ) + ( 1 - y ) * St-p
          * Ft+h = Lt + h * Tt + St-p+1+(h-1)%p
-         * 
+         *
          * **
-         * 
+         *
          * The multiplicative Holt-Winter's prediction model is denoted by the
          * following equations:
          *
@@ -67,10 +67,10 @@
          * y is the Smoothing constant gamma, used to Smoot St
          * Ft+h is the forecast for period h
          * p is the length of one season
-         * 
+         *
          * TODO(el): Implement multiplicative prediction model too?
          */
-        var t = 0,   // Time t, also abused as iteration variable
+        var t,        // Time t, also abused as iteration variable
             As1 = 0, // Average value of the first season, used to compue T0
             As2 = 0, // Average value of the second season, used to compute T0
             T0,      // Initial estimate of the slope
@@ -92,24 +92,27 @@
                     smoothingConstants.alpha,
             beta = (smoothingConstants.beta === undefined ||
                     smoothingConstants.beta === null) ?
-                   0.2 :
-                   smoothingConstants.beta,
+                    0.2 :
+                    smoothingConstants.beta,
             gamma = (smoothingConstants.gamma === undefined ||
                      smoothingConstants.gamma === null) ?
                     0.5 :
                     smoothingConstants.gamma,
-            // TODO(el): Determine unknown smoothing constants by minimizing
-            // the squared prediction error.
-            // TODO(el): Validate that smoothings constants are between
-            // 0 and 1.
-            h = 0,    // Period h
-            Fth = []; // Forecast fore period h
+            /*!
+             * TODO(el): Determine unknown smoothing constants by minimizing
+             * the squared prediction error. Validate that smoothing constants
+             * are between 0 and 1.
+             */
+            h,        // Period h
+            Fth = [], // Forecast fore period h
+            Yhat,
+            SSE = 0;
         /*!
          * Determine the initial estimates of model parameters using a minimum
          * of two full seasons.
          * TODO(el): Validate that a minimum of two full seasons is available.
          */
-        for (; t < p; ++t) { // Sum of season one
+        for (t = 0; t < p; ++t) { // Sum of season one
             As1 += observations[t];
         }
         As1 /= p; // Average of seasons one
@@ -140,7 +143,7 @@
             SAverageIndex += S[t];
         }
         for (t = 0; t < p; ++t) {              // Normalize indices
-            S[t] = S[t] / SAverageIndex * p; // so that they sum up to c
+            S[t] = S[t] / SAverageIndex * p;   // so that they sum up to c
         }
         /*!
          * Update estimates of the model parameters for every observation
@@ -161,11 +164,13 @@
             Lt = alpha * (Yt - S[t]) + (1.0 - alpha) * (Ltminus1 + Ttminus1);
             Tt = beta * (Lt - Ltminus1) + (1.0 - beta) * Ttminus1;
             S[t + p] = gamma * (Yt - Lt) + (1.0 - gamma) * S[t];
+            Yhat = Ltminus1 + Ttminus1 + S[t];
+            SSE += Math.pow(Yhat, 2);
         }
         /*!
          * Forecast for each period h = 1, 2, ..., c
-         */ 
-        for (; h < c; ++h) {
+         */
+        for (h = 0; h < c; ++h) {
             Fth.push(Lt + (h + 1) * Tt + S[t - p + 1 + (h - 1) % p]);
         }
         return Fth;

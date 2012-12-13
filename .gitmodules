@@ -1,0 +1,3 @@
+[submodule "examples/vendor/flot"]
+	path = examples/vendor/flot
+	url = https://github.com/lippser/flot.git
